@@ -1,5 +1,8 @@
 <?php
 
+error_reporting(E_ALL);
+ini_set('display_errors', 1); /* deactivate at your pleasure */
+
 //inspired by: https://medium.com/@sqrendk/how-you-can-use-facebook-to-track-your-friends-sleeping-habits-505ace7fffb6#.vdumf15vq
 
 require_once('facebook.php');
@@ -118,12 +121,11 @@ if(isset($_GET['update'])):
 
 	curl_close($ch);
 
-	preg_match('/\"lastActiveTimes\":\{(.*?)\}/',$data,$m);
+	preg_match('/\"?lastActiveTimes\"?:\{(.*?)\}/',$data,$m);
 
 	if(strlen($m[0]) > 25) {
 		//found something
-
-		$activity = json_decode('{'.$m[0].'}', true);
+		$activity = json_decode('{'.((substr($m[0], 0, 1) !== '"') ? str_replace('lastActiveTimes', '"lastActiveTimes"', $m[0]) : $m[0]).'}', true);
 		echo('update');
 
 		$qry = $db->prepare('INSERT INTO activity (user_id, last_active) VALUES (?, ?)');
@@ -266,10 +268,11 @@ else:
 		}
 	}
 
-	function compare_by($a, $b, $name) {
+	function compare_by($a, $b, $name='active') {
 		return ($a[$name] < $b[$name]) ? -1 : 1;
 	}
-	usort($result, 'compare_by', 'active');
+	usort($result, 'compare_by');
+	$result = array_reverse($result);
 
 	echo('<table id="recent">');
 	foreach($result as $user) {
